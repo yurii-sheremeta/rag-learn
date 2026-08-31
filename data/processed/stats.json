@@ -1,0 +1,95 @@
+{
+  "generated_at": "2026-08-31",
+  "chunking": {
+    "target_chars": 800,
+    "max_chars": 1000,
+    "min_chars": 500,
+    "overlap_chars": 150,
+    "strategy": "structure-aware: chapter -> article -> sentence, plus sentence-level overlap"
+  },
+  "totals": {
+    "documents": 6,
+    "chunks": 763,
+    "avg_chars": 809.2,
+    "median_chars": 835,
+    "min_chars": 197,
+    "max_chars": 1000,
+    "chunks_over_max": 0,
+    "chunks_under_500": 23,
+    "chunks_with_overlap": 372
+  },
+  "documents": [
+    {
+      "document_id": "kzpp",
+      "title": "Кодекс законів про працю України",
+      "source_file": "data/raw/kzpp.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/322-08/print",
+      "paragraphs": 1178,
+      "chunks": 463,
+      "avg_chars": 809.7,
+      "min_chars": 197,
+      "max_chars": 1000,
+      "normalized_file": "data/interim/kzpp.md"
+    },
+    {
+      "document_id": "zakon_pro_vidpustky",
+      "title": "Закон України «Про відпустки»",
+      "source_file": "data/raw/zakon_pro_vidpustky.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/504/96-%D0%B2%D1%80/print",
+      "paragraphs": 230,
+      "chunks": 80,
+      "avg_chars": 809.5,
+      "min_chars": 271,
+      "max_chars": 997,
+      "normalized_file": "data/interim/zakon_pro_vidpustky.md"
+    },
+    {
+      "document_id": "zakon_pro_oplatu_praci",
+      "title": "Закон України «Про оплату праці»",
+      "source_file": "data/raw/zakon_pro_oplatu_praci.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/108/95-%D0%B2%D1%80/print",
+      "paragraphs": 114,
+      "chunks": 40,
+      "avg_chars": 751.1,
+      "min_chars": 354,
+      "max_chars": 982,
+      "normalized_file": "data/interim/zakon_pro_oplatu_praci.md"
+    },
+    {
+      "document_id": "zakon_pro_ohoronu_praci",
+      "title": "Закон України «Про охорону праці»",
+      "source_file": "data/raw/zakon_pro_ohoronu_praci.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/2694-12/print",
+      "paragraphs": 264,
+      "chunks": 107,
+      "avg_chars": 834,
+      "min_chars": 463,
+      "max_chars": 1000,
+      "normalized_file": "data/interim/zakon_pro_ohoronu_praci.md"
+    },
+    {
+      "document_id": "zakon_pro_voiennyi_stan",
+      "title": "Закон України «Про організацію трудових відносин в умовах воєнного стану»",
+      "source_file": "data/raw/zakon_pro_voiennyi_stan.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/2136-20/print",
+      "paragraphs": 89,
+      "chunks": 43,
+      "avg_chars": 798.0,
+      "min_chars": 438,
+      "max_chars": 983,
+      "normalized_file": "data/interim/zakon_pro_voiennyi_stan.md"
+    },
+    {
+      "document_id": "zakon_pro_kolektyvni_dohovory",
+      "title": "Закон України «Про колективні договори і угоди»",
+      "source_file": "data/raw/zakon_pro_kolektyvni_dohovory.html",
+      "source_url": "https://zakon.rada.gov.ua/laws/show/3356-12/print",
+      "paragraphs": 120,
+      "chunks": 30,
+      "avg_chars": 805.7,
+      "min_chars": 565,
+      "max_chars": 963,
+      "normalized_file": "data/interim/zakon_pro_kolektyvni_dohovory.md"
+    }
+  ]
+}
