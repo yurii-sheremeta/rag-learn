@@ -1,0 +1,11 @@
+{
+  "model": "intfloat/multilingual-e5-base",
+  "dimension": 768,
+  "document_prefix": "passage: ",
+  "query_prefix": "query: ",
+  "normalized": true,
+  "index_type": "IndexFlatIP",
+  "similarity": "cosine (inner product on unit vectors)",
+  "vectors": 763,
+  "built_at": "2026-08-31"
+}
