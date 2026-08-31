@@ -1,0 +1,82 @@
+{
+  "max_k": 10,
+  "queries": 10,
+  "recall": {
+    "recall@1": 0.5,
+    "recall@3": 0.9,
+    "recall@5": 0.9,
+    "recall@10": 0.9
+  },
+  "results": [
+    {
+      "query": "Скільки днів щорічної відпустки мені належить?",
+      "document_id": "zakon_pro_vidpustky",
+      "article": "Стаття 6.",
+      "rank": 1,
+      "top1_chunk_id": "zakon_pro_vidpustky_chunk_0006"
+    },
+    {
+      "query": "Чи можуть звільнити працівника під час лікарняного?",
+      "document_id": "kzpp",
+      "article": "Стаття 40.",
+      "rank": 2,
+      "top1_chunk_id": "zakon_pro_voiennyi_stan_chunk_0008"
+    },
+    {
+      "query": "Коли роботодавець має виплатити розрахунок при звільненні?",
+      "document_id": "kzpp",
+      "article": "Стаття 116.",
+      "rank": 2,
+      "top1_chunk_id": "kzpp_chunk_0118"
+    },
+    {
+      "query": "Чи можна встановити випробувальний термін під час воєнного стану?",
+      "document_id": "zakon_pro_voiennyi_stan",
+      "article": "Стаття 2.",
+      "rank": 1,
+      "top1_chunk_id": "zakon_pro_voiennyi_stan_chunk_0002"
+    },
+    {
+      "query": "Хто розслідує нещасний випадок на виробництві?",
+      "document_id": "zakon_pro_ohoronu_praci",
+      "article": "Стаття 22.",
+      "rank": 1,
+      "top1_chunk_id": "zakon_pro_ohoronu_praci_chunk_0061"
+    },
+    {
+      "query": "Що таке мінімальна заробітна плата?",
+      "document_id": "zakon_pro_oplatu_praci",
+      "article": "Стаття 3.",
+      "rank": 1,
+      "top1_chunk_id": "zakon_pro_oplatu_praci_chunk_0003"
+    },
+    {
+      "query": "Скільки годин на тиждень я маю працювати?",
+      "document_id": "kzpp",
+      "article": "Стаття 50.",
+      "rank": 2,
+      "top1_chunk_id": "kzpp_chunk_0155"
+    },
+    {
+      "query": "Мене змушують вийти на роботу у вихідний, чи це законно?",
+      "document_id": "kzpp",
+      "article": "Стаття 71.",
+      "rank": 1,
+      "top1_chunk_id": "kzpp_chunk_0194"
+    },
+    {
+      "query": "Чи можу я взяти відпустку за свій рахунок на два тижні?",
+      "document_id": "zakon_pro_vidpustky",
+      "article": "Стаття 25.",
+      "rank": null,
+      "top1_chunk_id": "zakon_pro_vidpustky_chunk_0066"
+    },
+    {
+      "query": "Що робити, якщо роботодавець не виконує колективний договір?",
+      "document_id": "zakon_pro_kolektyvni_dohovory",
+      "article": "Стаття 18.",
+      "rank": 2,
+      "top1_chunk_id": "zakon_pro_kolektyvni_dohovory_chunk_0004"
+    }
+  ]
+}
