@@ -1,0 +1,56 @@
+[
+  {
+    "document_id": "kzpp",
+    "title": "Кодекс законів про працю України",
+    "short_title": "КЗпП України",
+    "document_type": "code",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/322-08/print",
+    "source_file": "data/raw/kzpp.html",
+    "retrieved_at": "2026-08-31"
+  },
+  {
+    "document_id": "zakon_pro_vidpustky",
+    "title": "Закон України «Про відпустки»",
+    "short_title": "Про відпустки",
+    "document_type": "law",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/504/96-%D0%B2%D1%80/print",
+    "source_file": "data/raw/zakon_pro_vidpustky.html",
+    "retrieved_at": "2026-08-31"
+  },
+  {
+    "document_id": "zakon_pro_oplatu_praci",
+    "title": "Закон України «Про оплату праці»",
+    "short_title": "Про оплату праці",
+    "document_type": "law",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/108/95-%D0%B2%D1%80/print",
+    "source_file": "data/raw/zakon_pro_oplatu_praci.html",
+    "retrieved_at": "2026-08-31"
+  },
+  {
+    "document_id": "zakon_pro_ohoronu_praci",
+    "title": "Закон України «Про охорону праці»",
+    "short_title": "Про охорону праці",
+    "document_type": "law",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/2694-12/print",
+    "source_file": "data/raw/zakon_pro_ohoronu_praci.html",
+    "retrieved_at": "2026-08-31"
+  },
+  {
+    "document_id": "zakon_pro_voiennyi_stan",
+    "title": "Закон України «Про організацію трудових відносин в умовах воєнного стану»",
+    "short_title": "Трудові відносини в умовах воєнного стану",
+    "document_type": "law",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/2136-20/print",
+    "source_file": "data/raw/zakon_pro_voiennyi_stan.html",
+    "retrieved_at": "2026-08-31"
+  },
+  {
+    "document_id": "zakon_pro_kolektyvni_dohovory",
+    "title": "Закон України «Про колективні договори і угоди»",
+    "short_title": "Про колективні договори і угоди",
+    "document_type": "law",
+    "source_url": "https://zakon.rada.gov.ua/laws/show/3356-12/print",
+    "source_file": "data/raw/zakon_pro_kolektyvni_dohovory.html",
+    "retrieved_at": "2026-08-31"
+  }
+]
