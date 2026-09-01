@@ -22,7 +22,6 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = ROOT / "outputs" / "evaluation.json"
 MAX_K = 10
 
-# query -> the article that actually answers it
 GROUND_TRUTH: list[dict[str, str]] = [
     {
         "query": "Скільки днів щорічної відпустки мені належить?",

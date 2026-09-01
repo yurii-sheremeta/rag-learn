@@ -29,7 +29,6 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
-# document_id -> source description
 SOURCES: dict[str, dict[str, str]] = {
     "kzpp": {
         "rada_id": "322-08",
@@ -130,7 +129,7 @@ def main() -> None:
                 "retrieved_at": date.today().isoformat(),
             }
         )
-        time.sleep(1.0)  # polite delay between requests
+        time.sleep(1.0)
 
     manifest_path = RAW_DIR / "manifest.json"
     manifest_path.write_text(

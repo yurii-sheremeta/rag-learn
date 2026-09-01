@@ -27,14 +27,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-# --------------------------------------------------------------------------
-# Chunking parameters
-# --------------------------------------------------------------------------
 
-TARGET_CHARS = 800   # preferred chunk size
-MAX_CHARS = 1000     # hard upper bound (assignment requirement)
-MIN_CHARS = 500      # below this we try to append the next block instead
-OVERLAP_CHARS = 150  # overlap between chunks that split a single article
+TARGET_CHARS = 800
+MAX_CHARS = 1000
+MIN_CHARS = 500
+OVERLAP_CHARS = 150
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
@@ -46,10 +43,6 @@ DOMAIN = "labour_law"
 JURISDICTION = "UA"
 
 
-# --------------------------------------------------------------------------
-# 1. Normalization: HTML -> clean text paragraphs
-# --------------------------------------------------------------------------
-
 ARTICLE_ANCHOR = '<div id="article">'
 
 BLOCK_CLOSE_RE = re.compile(r"</(p|div|tr|td|th|li|h[1-6]|table)\s*>", re.I)
@@ -58,18 +51,13 @@ SCRIPT_RE = re.compile(r"<(script|style)\b.*?</\1\s*>", re.I | re.S)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
 TAG_RE = re.compile(r"<[^>]+>")
 
-# Editorial notes such as {Із змінами, внесеними згідно із Законом ...} are
-# portal boilerplate that hurts retrieval quality, so we strip them.
 EDITORIAL_INLINE_RE = re.compile(r"\{[^{}]*\}", re.S)
 
-# Technical stamp of the document card on the portal.
 STAMP_MARKERS = (
     "поточна редакція",
     "Документ, актуальний на",
 )
 
-# Chronological list of amending acts: "№ 2048-08 від 18.09.73, ВВР 1973,
-# № 40, ст.343". Carries no legal content — pure noise for retrieval.
 AMENDMENT_REF_RE = re.compile(r"^\(?№\s*\d[\w/–-]*\s+від\s+\d")
 VVR_REF_RE = re.compile(r"^\(?ВВР[,\s]")
 
@@ -86,7 +74,7 @@ def extract_article_html(raw_html: str) -> str:
 
     while depth > 0:
         match = tag_re.search(raw_html, cursor)
-        if match is None:  # container never closed — take the rest of the page
+        if match is None:
             return raw_html[start:]
         depth += -1 if match.group(1) else 1
         cursor = match.end()
@@ -102,7 +90,6 @@ def is_noise(paragraph: str) -> bool:
         return True
     if AMENDMENT_REF_RE.match(paragraph) or VVR_REF_RE.match(paragraph):
         return True
-    # Orphaned fragments of editorial notes such as "від 01.07.2022}"
     if paragraph.endswith("}") and "{" not in paragraph:
         return True
     if paragraph.startswith("{") and "}" not in paragraph:
@@ -121,7 +108,7 @@ def html_to_paragraphs(article_html: str) -> list[str]:
     text = text.replace("\xa0", " ").replace("​", "")
 
     paragraphs: list[str] = []
-    inside_note = False  # an editorial note whose braces span several paragraphs
+    inside_note = False
 
     for raw_paragraph in re.split(r"\n\s*\n", text):
         paragraph = re.sub(r"[ \t]+", " ", raw_paragraph.replace("\n", " ")).strip()
@@ -132,7 +119,6 @@ def html_to_paragraphs(article_html: str) -> list[str]:
         closes = paragraph.count("}")
 
         if inside_note:
-            # drop everything inside the note until we see it close
             if closes > opens:
                 inside_note = False
             continue
@@ -144,7 +130,7 @@ def html_to_paragraphs(article_html: str) -> list[str]:
             continue
 
         paragraph = EDITORIAL_INLINE_RE.sub("", paragraph)
-        paragraph = re.sub(r"^\s*/-\s*", "", paragraph)  # one-off markup artefact
+        paragraph = re.sub(r"^\s*/-\s*", "", paragraph)
         paragraph = re.sub(r"\s{2,}", " ", paragraph).strip()
         if len(paragraph) < 3:
             continue
@@ -152,10 +138,6 @@ def html_to_paragraphs(article_html: str) -> list[str]:
 
     return paragraphs
 
-
-# --------------------------------------------------------------------------
-# 2. Reconstructing the structure of the act
-# --------------------------------------------------------------------------
 
 CHAPTER_RE = re.compile(
     r"^(Розділ|РОЗДІЛ|Глава|ГЛАВА)\s+([IVXLC]+(?:-[А-ЯҐЄІЇ])?|\d+)\.?$"
@@ -200,7 +182,6 @@ def parse_structure(paragraphs: list[str]) -> list[Block]:
     pending_chapter_number: str | None = None
 
     for paragraph in paragraphs:
-        # The chapter name usually sits in its own paragraph right after the number.
         if pending_chapter_number is not None:
             chapter = f"{pending_chapter_number}. {paragraph.strip()}"
             pending_chapter_number = None
@@ -264,11 +245,6 @@ def write_normalized_markdown(document: Document) -> Path:
     return target
 
 
-# --------------------------------------------------------------------------
-# 3. Chunking
-# --------------------------------------------------------------------------
-
-# Ukrainian legal abbreviations after which a period does not end a sentence.
 ABBREVIATIONS = {
     "ст", "стст", "п", "пп", "ч", "чч", "абз", "розд", "гл", "ін", "т", "д",
     "грн", "тис", "млн", "млрд", "год", "хв", "коп", "р", "рр", "м", "см",
@@ -290,7 +266,6 @@ def split_sentences(text: str) -> list[str]:
         last_token = re.search(r"([^\s.]+)\.$", head.strip())
         if last_token:
             token = last_token.group(1).lower()
-            # an abbreviation like "ст.", "п.", "ч." or a short item number
             if token in ABBREVIATIONS or (token.isdigit() and len(token) <= 2):
                 continue
         sentences.append(head.strip())
@@ -363,7 +338,6 @@ def tail_overlap(text: str, size: int) -> str:
     if picked:
         return " ".join(picked).strip()
 
-    # No whole sentence fits — cut the tail on a word boundary instead.
     tail = text[-size:]
     space = tail.find(" ")
     return tail[space + 1:].strip() if space != -1 else ""
@@ -441,8 +415,6 @@ def chunk_document(document: Document) -> list[Chunk]:
             flush()
             start(block)
         elif block.section != current.section:
-            # A short article joins the previous chunk within the same chapter,
-            # but only if the longer header still leaves room for the text.
             label = block.article_no or block.section
             extras = current.extra_articles + [label]
             if MAX_CHARS - len(render_header(current.base_header, extras)) - 2 < len(
@@ -455,8 +427,6 @@ def chunk_document(document: Document) -> list[Chunk]:
                 current.extra_articles = extras
 
         assert current is not None
-        # The header may grow if the chunk has to be restarted from this block,
-        # so budget against the longer of the two possible headers.
         budget = MAX_CHARS - max(
             len(current.header), len(build_header(document, block))
         ) - 2
@@ -470,7 +440,6 @@ def chunk_document(document: Document) -> list[Chunk]:
                     current.body = candidate
                     continue
 
-                # chunk is full — emit it and open the next one
                 previous_body = current.body
                 previous_section = current.section
                 flush()
@@ -483,7 +452,6 @@ def chunk_document(document: Document) -> list[Chunk]:
                 assert current is not None
                 budget = MAX_CHARS - len(current.header) - 2
                 if current.body and len(current.body) + 1 + len(piece) > budget:
-                    # overlap does not fit alongside the piece — drop the overlap
                     current.body = ""
                     current.has_overlap = False
                 current.body = (
@@ -492,7 +460,6 @@ def chunk_document(document: Document) -> list[Chunk]:
 
     flush()
 
-    # Append a very short trailing chunk to the previous one when there is room.
     merged: list[Chunk] = []
     for chunk in chunks:
         if (
@@ -509,11 +476,6 @@ def chunk_document(document: Document) -> list[Chunk]:
         merged.append(chunk)
 
     return merged
-
-
-# --------------------------------------------------------------------------
-# 4. Assembling the knowledge base
-# --------------------------------------------------------------------------
 
 
 def drop_title_echo(blocks: list[Block], title: str) -> list[Block]:
