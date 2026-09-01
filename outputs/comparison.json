@@ -1,0 +1,248 @@
+{
+  "generated_at": "2026-09-02",
+  "queries_tested": 10,
+  "top_k": 3,
+  "configurations": {
+    "baseline": {
+      "recall@1": 0.5,
+      "recall@3": 0.9,
+      "ranks": [
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        null,
+        2
+      ]
+    },
+    "+ filters": {
+      "recall@1": 0.5,
+      "recall@3": 0.9,
+      "ranks": [
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        null,
+        2
+      ]
+    },
+    "+ dedup": {
+      "recall@1": 0.5,
+      "recall@3": 0.9,
+      "ranks": [
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        null,
+        2
+      ]
+    },
+    "+ rerank": {
+      "recall@1": 0.8,
+      "recall@3": 0.9,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        null,
+        1
+      ]
+    },
+    "improved": {
+      "recall@1": 0.9,
+      "recall@3": 0.9,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        null,
+        1
+      ]
+    }
+  },
+  "filter_demos": [
+    {
+      "query": "що каже стаття 116 про строки розрахунку",
+      "expect": "article_no фільтрує 20 кандидатів до чанків однієї статті",
+      "filters": "article_no=116",
+      "candidates_before": 20,
+      "candidates_after": 1,
+      "top1_without": "kzpp_chunk_0252",
+      "top1_with": "kzpp_chunk_0251"
+    },
+    {
+      "query": "які обов'язки роботодавця встановлює закон про охорону праці",
+      "expect": "document_id маршрутизує пошук в один акт",
+      "filters": "document_id in ['zakon_pro_ohoronu_praci']",
+      "candidates_before": 20,
+      "candidates_after": 15,
+      "top1_without": "zakon_pro_ohoronu_praci_chunk_0022",
+      "top1_with": "zakon_pro_ohoronu_praci_chunk_0022"
+    },
+    {
+      "query": "стаття 40 КЗпП підстави звільнення",
+      "expect": "обидва фільтри одночасно — номер статті і акт",
+      "filters": "article_no=40, document_id in ['kzpp']",
+      "candidates_before": 20,
+      "candidates_after": 5,
+      "top1_without": "kzpp_chunk_0091",
+      "top1_with": "kzpp_chunk_0091"
+    }
+  ],
+  "queries": [
+    {
+      "query": "Скільки днів щорічної відпустки мені належить?",
+      "article": "Стаття 6.",
+      "document_id": "zakon_pro_vidpustky",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_vidpustky_chunk_0006",
+      "baseline_section": "Стаття 6. Щорічна основна відпустка та її тривалість",
+      "baseline_gold_rank": 1,
+      "improved_top1": "zakon_pro_vidpustky_chunk_0009",
+      "improved_section": "Стаття 6. Щорічна основна відпустка та її тривалість",
+      "improved_gold_rank": 1,
+      "explanation": "та сама стаття лишилась top-1, змінився лише фрагмент: reranker підняв із позиції #9"
+    },
+    {
+      "query": "Чи можуть звільнити працівника під час лікарняного?",
+      "article": "Стаття 40.",
+      "document_id": "kzpp",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_voiennyi_stan_chunk_0008",
+      "baseline_section": "Стаття 5. Особливості розірвання трудового договору з ініціативи роботодавця",
+      "baseline_gold_rank": 2,
+      "improved_top1": "kzpp_chunk_0090",
+      "improved_section": "Стаття 40. Розірвання трудового договору з ініціативи роботодавця",
+      "improved_gold_rank": 1,
+      "explanation": "**виправлено** — потрібна стаття стала top-1: reranker підняв із позиції #2"
+    },
+    {
+      "query": "Коли роботодавець має виплатити розрахунок при звільненні?",
+      "article": "Стаття 116.",
+      "document_id": "kzpp",
+      "filters": "—",
+      "baseline_top1": "kzpp_chunk_0118",
+      "baseline_section": "Стаття 47. Обов'язок роботодавця провести розрахунок з працівником",
+      "baseline_gold_rank": 2,
+      "improved_top1": "kzpp_chunk_0251",
+      "improved_section": "Стаття 116. Строки розрахунку при звільненні",
+      "improved_gold_rank": 1,
+      "explanation": "**виправлено** — потрібна стаття стала top-1: reranker підняв із позиції #2"
+    },
+    {
+      "query": "Чи можна встановити випробувальний термін під час воєнного стану?",
+      "article": "Стаття 2.",
+      "document_id": "zakon_pro_voiennyi_stan",
+      "filters": "document_id in ['zakon_pro_voiennyi_stan']",
+      "baseline_top1": "zakon_pro_voiennyi_stan_chunk_0002",
+      "baseline_section": "Стаття 2. Особливості укладення трудового договору в умовах воєнного стану",
+      "baseline_gold_rank": 1,
+      "improved_top1": "zakon_pro_voiennyi_stan_chunk_0002",
+      "improved_section": "Стаття 2. Особливості укладення трудового договору в умовах воєнного стану",
+      "improved_gold_rank": 1,
+      "explanation": "без змін — baseline уже був точним"
+    },
+    {
+      "query": "Хто розслідує нещасний випадок на виробництві?",
+      "article": "Стаття 22.",
+      "document_id": "zakon_pro_ohoronu_praci",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_ohoronu_praci_chunk_0061",
+      "baseline_section": "Стаття 22. Розслідування та облік нещасних випадків, професійних захворювань і аварій",
+      "baseline_gold_rank": 1,
+      "improved_top1": "zakon_pro_ohoronu_praci_chunk_0061",
+      "improved_section": "Стаття 22. Розслідування та облік нещасних випадків, професійних захворювань і аварій",
+      "improved_gold_rank": 1,
+      "explanation": "без змін — baseline уже був точним"
+    },
+    {
+      "query": "Що таке мінімальна заробітна плата?",
+      "article": "Стаття 3.",
+      "document_id": "zakon_pro_oplatu_praci",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_oplatu_praci_chunk_0003",
+      "baseline_section": "Стаття 3. Мінімальна заробітна плата",
+      "baseline_gold_rank": 1,
+      "improved_top1": "zakon_pro_oplatu_praci_chunk_0003",
+      "improved_section": "Стаття 3. Мінімальна заробітна плата",
+      "improved_gold_rank": 1,
+      "explanation": "без змін — baseline уже був точним"
+    },
+    {
+      "query": "Скільки годин на тиждень я маю працювати?",
+      "article": "Стаття 50.",
+      "document_id": "kzpp",
+      "filters": "—",
+      "baseline_top1": "kzpp_chunk_0155",
+      "baseline_section": "Стаття 52. П'ятиденний і шестиденний робочий тиждень та тривалість щоденної роботи",
+      "baseline_gold_rank": 2,
+      "improved_top1": "kzpp_chunk_0152",
+      "improved_section": "Стаття 50. Норма тривалості робочого часу",
+      "improved_gold_rank": 1,
+      "explanation": "**виправлено** — потрібна стаття стала top-1: reranker підняв із позиції #2"
+    },
+    {
+      "query": "Мене змушують вийти на роботу у вихідний, чи це законно?",
+      "article": "Стаття 71.",
+      "document_id": "kzpp",
+      "filters": "—",
+      "baseline_top1": "kzpp_chunk_0194",
+      "baseline_section": "Стаття 71. Заборона роботи у вихідні дні. Винятковий порядок застосування такої роботи",
+      "baseline_gold_rank": 1,
+      "improved_top1": "kzpp_chunk_0194",
+      "improved_section": "Стаття 71. Заборона роботи у вихідні дні. Винятковий порядок застосування такої роботи",
+      "improved_gold_rank": 1,
+      "explanation": "без змін — baseline уже був точним"
+    },
+    {
+      "query": "Чи можу я взяти відпустку за свій рахунок на два тижні?",
+      "article": "Стаття 25.",
+      "document_id": "zakon_pro_vidpustky",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_vidpustky_chunk_0066",
+      "baseline_section": "Стаття 24. Грошова компенсація за невикористані щорічні відпустки",
+      "baseline_gold_rank": null,
+      "improved_top1": "zakon_pro_vidpustky_chunk_0026",
+      "improved_section": "Стаття 10. Порядок надання щорічних відпусток",
+      "improved_gold_rank": null,
+      "explanation": "не виправлено — правильної статті немає в top-1 в обох варіантах: дедуплікація прибрала kzpp_chunk_0137; reranker підняв із позиції #7"
+    },
+    {
+      "query": "Що робити, якщо роботодавець не виконує колективний договір?",
+      "article": "Стаття 18.",
+      "document_id": "zakon_pro_kolektyvni_dohovory",
+      "filters": "—",
+      "baseline_top1": "zakon_pro_kolektyvni_dohovory_chunk_0004",
+      "baseline_section": "Стаття 4. Право на ведення переговорів і укладення колективних договорів, угод",
+      "baseline_gold_rank": 2,
+      "improved_top1": "zakon_pro_kolektyvni_dohovory_chunk_0028",
+      "improved_section": "Стаття 18. Відповідальність за порушення і невиконання колективного договору, угоди",
+      "improved_gold_rank": 1,
+      "explanation": "**виправлено** — потрібна стаття стала top-1: reranker підняв із позиції #2"
+    }
+  ]
+}

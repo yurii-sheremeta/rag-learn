@@ -63,7 +63,6 @@ def main() -> int:
         print("ERROR: file is empty")
         return 1
 
-    # --- structure ---------------------------------------------------------
     for record in records:
         for field in REQUIRED_TOP_LEVEL:
             if field not in record:
@@ -83,7 +82,6 @@ def main() -> int:
     if duplicates:
         errors.append(f"duplicate chunk_id values: {duplicates[:5]}")
 
-    # --- per-document indexing ---------------------------------------------
     by_document: dict[str, list[dict]] = {}
     for record in records:
         by_document.setdefault(record["metadata"]["document_id"], []).append(record)
@@ -93,7 +91,6 @@ def main() -> int:
         if indexes != list(range(len(document_records))):
             errors.append(f"{document_id}: chunk_index is not a contiguous sequence")
 
-    # --- sizes -------------------------------------------------------------
     sizes = [len(r["text"]) for r in records]
     oversized = [r["chunk_id"] for r in records if len(r["text"]) > MAX_CHARS]
     if oversized:
@@ -106,14 +103,12 @@ def main() -> int:
             f"({len(undersized) / len(records):.1%}) — whole short articles"
         )
 
-    # --- text cleanliness --------------------------------------------------
     dirty = [r["chunk_id"] for r in records if MARKUP_RE.search(r["text"])]
     if dirty:
         errors.append(
             f"leftover markup or editorial notes in {len(dirty)} chunks: {dirty[:3]}"
         )
 
-    # --- overlap -----------------------------------------------------------
     overlap_declared = 0
     overlap_confirmed = 0
     for index, record in enumerate(records):
@@ -129,7 +124,6 @@ def main() -> int:
             f"overlap confirmed for only {overlap_confirmed}/{overlap_declared}"
         )
 
-    # --- report ------------------------------------------------------------
     print("=" * 62)
     print("KNOWLEDGE BASE VALIDATION")
     print("=" * 62)

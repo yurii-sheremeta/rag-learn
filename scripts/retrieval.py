@@ -86,7 +86,7 @@ class Retriever:
 
         hits: list[Hit] = []
         for rank, (score, position) in enumerate(zip(scores[0], positions[0]), start=1):
-            if position < 0:  # FAISS pads with -1 when k exceeds the corpus
+            if position < 0:
                 continue
             entry = self.meta[position]
             hits.append(

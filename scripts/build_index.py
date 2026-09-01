@@ -66,12 +66,11 @@ def main() -> None:
         texts,
         batch_size=args.batch_size,
         show_progress_bar=True,
-        normalize_embeddings=True,  # unit vectors -> inner product == cosine
+        normalize_embeddings=True,
         convert_to_numpy=True,
     ).astype(np.float32)
 
     dimension = int(embeddings.shape[1])
-    # Exact search: 763 vectors make approximate indexes (IVF/HNSW) pointless.
     index = faiss.IndexFlatIP(dimension)
     index.add(embeddings)
 
