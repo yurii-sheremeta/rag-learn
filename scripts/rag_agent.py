@@ -82,13 +82,27 @@ submit_leave_request записує заявку. Спершу викликай 
 покажи користувачу параметри й попроси підтвердити. Ніколи не став
 confirmed=true самостійно, доки користувач явно не погодився.
 
+КОЛИ ДЖЕРЕЛА НЕ ВІДПОВІДАЮТЬ НА ПИТАННЯ
+Перш ніж писати таку відповідь, ОБОВ'ЯЗКОВО виклич
+report_insufficient_context. Це стосується будь-якої причини: питання поза
+трудовим правом України, про інші країни, про податкове чи процесуальне
+законодавство, або пошук повернув лише дотичні норми.
+
+Не пиши відмову словами, не викликавши цей інструмент. Система розрізняє
+«не знаю» і «ось відповідь» саме за цим викликом, а не за формулюванням
+твого тексту.
+
+search_labour_law повертає поле context_quality. Статус "weak" означає, що
+найкращий збіг нижчий за поріг — це не доказ нерелевантності, але привід
+перечитати фрагменти уважно, спробувати інше формулювання запиту або, якщо
+відповіді там справді немає, викликати report_insufficient_context.
+
 ЯК ВІДПОВІДАТИ
 - Відповідай стисло, простою мовою.
 - Норму з бази знань цитуй у форматі [Стаття N Акт, chunk_id].
 - Дані з інструмента підписуй назвою інструмента: [get_statutory_amount].
 - Якщо інструмент повернув data_status "fixture" — обов'язково попередь
   користувача, що це демонстраційні, а не звірені дані.
-- Якщо жодне джерело не дало відповіді, скажи прямо, що інформації немає.
 - Не використовуй знання поза наданими джерелами.
 """
 
@@ -111,6 +125,9 @@ class ToolCall:
         }
 
 
+REFUSAL_TOOL = "report_insufficient_context"
+
+
 @dataclass
 class AgentAnswer:
     question: str
@@ -121,6 +138,33 @@ class AgentAnswer:
     iterations: int = 0
 
     @property
+    def refused(self) -> bool:
+        """Whether the assistant declined — read from the trace, not the prose.
+
+        A tool call cannot be phrased three different ways, so this replaces
+        the phrase matching that produced two false alarms out of two in the
+        HW8 evaluation.
+        """
+        return any(call.name == REFUSAL_TOOL and call.ok for call in self.calls)
+
+    @property
+    def refusal_details(self) -> dict | None:
+        for call in self.calls:
+            if call.name == REFUSAL_TOOL and call.ok:
+                return call.arguments
+        return None
+
+    @property
+    def weak_context_seen(self) -> bool:
+        """True when any retrieval this turn came back below the score floor."""
+        return any(
+            call.name == "search_labour_law"
+            and isinstance(call.result, dict)
+            and call.result.get("context_quality", {}).get("status") in {"weak", "empty"}
+            for call in self.calls
+        )
+
+    @property
     def cost_usd(self) -> float:
         return self.input_tokens / 1e6 * 5.0 + self.output_tokens / 1e6 * 25.0
 
@@ -129,6 +173,9 @@ class AgentAnswer:
             "question": self.question,
             "answer": self.text,
             "tool_calls": [call.to_dict() for call in self.calls],
+            "refused": self.refused,
+            "refusal_details": self.refusal_details,
+            "weak_context_seen": self.weak_context_seen,
             "iterations": self.iterations,
             "usage": {
                 "input_tokens": self.input_tokens,
@@ -141,8 +188,20 @@ class AgentAnswer:
 _retriever = None
 
 
+WEAK_CONTEXT_SCORE = 0.86
+
+
 def search_labour_law(query: str, k: int = 3) -> dict[str, Any]:
-    """The HW2 retriever, wrapped so the model can reach it as a tool."""
+    """The HW2 retriever, wrapped so the model can reach it as a tool.
+
+    The result carries a `context_quality` block as well as the chunks. The
+    reason is a limitation measured in HW2: bi-encoder scores sit in a narrow
+    band (0.851-0.897) where a correct and an incorrect hit differ by
+    hundredths, so no threshold can decide relevance on its own. What the
+    threshold *can* do is tell the model when it is near the bottom of that
+    band, which is a fact the model otherwise has no access to — it sees text,
+    never numbers. The judgement stays with the model; the evidence improves.
+    """
     global _retriever
     if _retriever is None:
         from retrieval import Retriever
@@ -150,6 +209,19 @@ def search_labour_law(query: str, k: int = 3) -> dict[str, Any]:
         _retriever = Retriever()
 
     hits = _retriever.search(query, k=k)
+
+    if not hits:
+        return {
+            "query": query,
+            "chunks": [],
+            "context_quality": {
+                "status": "empty",
+                "note": "Пошук не повернув жодного фрагмента.",
+            },
+        }
+
+    top_score = max(hit.score for hit in hits)
+    weak = top_score < WEAK_CONTEXT_SCORE
     return {
         "query": query,
         "chunks": [
@@ -162,6 +234,19 @@ def search_labour_law(query: str, k: int = 3) -> dict[str, Any]:
             }
             for hit in hits
         ],
+        "context_quality": {
+            "status": "weak" if weak else "normal",
+            "top_score": round(top_score, 4),
+            "threshold": WEAK_CONTEXT_SCORE,
+            "note": (
+                "Найкращий збіг нижчий за поріг. Це не доказ нерелевантності, "
+                "але привід уважно перевірити, чи справді ці фрагменти "
+                "відповідають на питання, і за потреби переформулювати запит "
+                "або викликати report_insufficient_context."
+                if weak
+                else "Збіг у звичайному діапазоні."
+            ),
+        },
     }
 
 

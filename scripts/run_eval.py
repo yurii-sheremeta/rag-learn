@@ -73,7 +73,8 @@ REFUSAL_PATTERNS = re.compile(
 )
 
 
-def detect_refusal(answer: str) -> bool:
+def detect_refusal_lexically(answer: str) -> bool:
+    """The old detector. Kept only to measure how far off it was."""
     return bool(REFUSAL_PATTERNS.search(answer))
 
 
@@ -81,7 +82,7 @@ def classify_error(case: dict, record: dict) -> str:
     """Mechanical error signals. Anything subtler is left to the labels."""
     errors: list[str] = []
 
-    if not record["tools_used"]:
+    if not [t for t in record["tools_used"] if t != "report_insufficient_context"]:
         errors.append("no_tool_call")
     elif case["expected_route"] not in record["routes"]:
         errors.append("wrong_route")
@@ -126,7 +127,10 @@ def run_case(case: dict) -> dict:
         "cited_chunks": sorted(set(CHUNK_RE.findall(result.text))),
         "routes": routes,
         "tools_used": tools_used,
-        "refused": detect_refusal(result.text),
+        "refused": result.refused,
+        "refused_lexical": detect_refusal_lexically(result.text),
+        "refusal_details": result.refusal_details,
+        "weak_context_seen": result.weak_context_seen,
         "iterations": result.iterations,
         "latency_ms": latency_ms,
         "cost_usd": round(result.cost_usd, 5),
@@ -151,7 +155,6 @@ def rows_for_report(store: dict) -> list[dict]:
         record = store["runs"].get(str(case["id"]))
         if record is None:
             continue
-        record["refused"] = detect_refusal(record["answer"])
         label = LABELS.get(case["id"], {})
         rows.append(
             {
