@@ -295,6 +295,69 @@ def submit_leave_request(
 
 
 # --------------------------------------------------------------------------
+# Tool 4 - report_insufficient_context (signal)
+# --------------------------------------------------------------------------
+
+
+class InsufficientContextInput(BaseModel):
+    """Input contract for report_insufficient_context."""
+
+    topic: str = Field(
+        min_length=3,
+        max_length=200,
+        description="Про що було питання, кількома словами.",
+    )
+    missing: str = Field(
+        min_length=3,
+        max_length=400,
+        description="Чого саме бракує, щоб відповісти.",
+    )
+    partial_information: str | None = Field(
+        default=None,
+        max_length=400,
+        description="Дотична норма, якщо джерела її містять, але вона не є "
+        "відповіддю на питання. Порожнє, якщо нічого дотичного немає.",
+    )
+
+
+def report_insufficient_context(
+    topic: str,
+    missing: str,
+    partial_information: str | None = None,
+) -> dict[str, Any]:
+    """Record that the sources do not answer the question.
+
+    This tool exists to turn a refusal into a fact the system holds rather
+    than prose the system has to be parsed for. Before it, "did the assistant
+    decline?" was answered by matching phrases against the answer text — and
+    the HW8 evaluation showed that detector scoring two correct refusals as
+    hallucination risk, because the agent declines in its own words and
+    nothing constrains those words.
+
+    Calling a tool cannot be phrased differently. The signal is now carried by
+    the same traced, validated channel as every other tool call.
+    """
+    try:
+        payload = InsufficientContextInput(
+            topic=topic, missing=missing, partial_information=partial_information
+        )
+    except ValidationError as error:
+        raise ToolError(_format_validation_error(error)) from error
+
+    return {
+        "acknowledged": True,
+        "topic": payload.topic,
+        "missing": payload.missing,
+        "partial_information": payload.partial_information,
+        "instruction": (
+            "Повідом користувачу, що відповіді в доступних джерелах немає, "
+            "і назви, чого саме бракує. Якщо є дотична норма — наведи її "
+            "окремо, явно позначивши, що вона не є відповіддю на питання."
+        ),
+    }
+
+
+# --------------------------------------------------------------------------
 # Registry: one place that maps a name to its schema and its implementation
 # --------------------------------------------------------------------------
 
@@ -371,6 +434,20 @@ TOOLS: dict[str, dict[str, Any]] = {
             "«скільки днів я вже накопичив». "
             "НЕ ВИКЛИКАТИ для питань про тривалість відпустки взагалі — "
             "це норма закону, використовуй search_labour_law."
+        ),
+    },
+    "report_insufficient_context": {
+        "kind": "signal",
+        "function": report_insufficient_context,
+        "model": InsufficientContextInput,
+        "description": (
+            "ОБОВ'ЯЗКОВО виклич цей інструмент, якщо доступні джерела не "
+            "відповідають на питання користувача — перш ніж писати відповідь. "
+            "Стосується будь-якої причини: питання поза корпусом трудового "
+            "права, про інші країни, про податкове чи процесуальне "
+            "законодавство, або пошук повернув лише дотичні норми. "
+            "НЕ ВИКЛИКАТИ, якщо джерела таки містять відповідь, навіть "
+            "часткову."
         ),
     },
     "submit_leave_request": {

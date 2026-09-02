@@ -18,13 +18,14 @@ Answer quality good:    10/10 = 100%
 Answer quality partial: 0/10 = 0%
 Answer quality bad:     0/10 = 0%
 
-Average latency:        29,968 ms
-Median latency:         18,465 ms
-Min latency:            9,658 ms
-Max latency:            110,592 ms
+Average latency:        31,438 ms
+Median latency:         17,846 ms
+Min latency:            8,532 ms
+Max latency:            115,118 ms
 
 Error types:
-  none:                  10
+  none:                  9
+  no_tool_call:          1
 
 Routes taken:
   RAG:                   4
@@ -32,7 +33,7 @@ Routes taken:
   tool:                  2
   RAG + tool:            2
 
-Total cost of eval run: $0.6764
+Total cost of eval run: $0.8004
 ```
 
 ---
