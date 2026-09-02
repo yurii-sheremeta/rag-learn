@@ -1,0 +1,15 @@
+{
+  "requests": [
+    {
+      "employee_id": "emp_001",
+      "employee_name": "Олена Ткаченко",
+      "start_date": "2026-10-01",
+      "days": 10,
+      "accrued_days_at_start": 24,
+      "exceeds_accrued": false,
+      "request_id": "req_0001",
+      "submitted_at": "2026-09-02T15:12:30",
+      "status": "submitted"
+    }
+  ]
+}
