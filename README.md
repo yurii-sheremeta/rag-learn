@@ -75,6 +75,8 @@ outputs/
   tool_runs.json            сліди викликів у машинозчитуваному вигляді
   agent_flow_examples.md    6 трасувань workflow: route → steps → state (ДЗ №6)
   routing_comparison.md     детермінований роутер проти LLM-роутера
+  langgraph_examples.md     5 трасувань графа + згенерована діаграма (ДЗ №7)
+  parity_check.md           доказ, що порт не змінив поведінку
 scripts/
   download_sources.py       крок 1: завантаження сирих джерел
   prepare_knowledge_base.py крок 2: нормалізація → чанкінг → metadata → JSONL
@@ -87,6 +89,8 @@ scripts/
   compare_retrieval.py      абляція та звіт baseline vs improved
   agent_flow.py             крок 9: детермінований workflow зі станом (ДЗ №6)
   run_agent_flow.py         трасування + порівняння роутерів
+  langgraph_flow.py         крок 10: той самий workflow на LangGraph (ДЗ №7)
+  run_langgraph.py          трасування + перевірка паритету двох реалізацій
   external_tool.py          крок 8: три інструменти + Pydantic-валідація (ДЗ №5)
   rag_agent.py              оркестрація: модель обирає інструмент або пошук
   run_tool_examples.py      5 сценаріїв → outputs/tool_examples.md
@@ -1549,3 +1553,239 @@ python scripts/run_agent_flow.py
 Жодного виклику API — прогін безкоштовний і повторюється байт у байт.
 Результати: [`outputs/agent_flow_examples.md`](outputs/agent_flow_examples.md)
 та [`outputs/routing_comparison.md`](outputs/routing_comparison.md).
+
+---
+
+# Домашнє завдання №7 — Workflow на LangGraph
+
+Той самий workflow, що в ДЗ №6, перенесений на фреймворк — і виміряний.
+
+## 43. Чому LangGraph
+
+Обраний не за популярністю, а тому що його примітиви **вже збігаються** з тим,
+що ми написали руками в ДЗ №6: типізований стан, що передається між кроками,
+дискретні кроки й розгалуження за умовою. Порт зводиться до перейменування,
+а не до перебудови.
+
+Альтернативи відпали за формою задачі, а не за якістю:
+
+- **LlamaIndex Workflow** — подієво-орієнтований. Для лінійного маршруту з
+  розгалуженням це зайвий рівень непрямості.
+- **CrewAI Flow** — побудований навколо кількох агентів, що співпрацюють.
+  У нас один агент і детерміновані правила; ролі й делегування нема кому роздати.
+- **smolagents** — орієнтований на агентів, які пишуть код. Наш workflow
+  свідомо не має свободи дій.
+
+## 44. Порт, а не переписування
+
+Ключове рішення реалізації: `langgraph_flow.py` **імпортує** правила
+маршрутизації, витяг слотів, інструменти й шаблони відповідей із
+`agent_flow.py`. Скопійовано нічого.
+
+Це не економія зусиль, а умова коректності експерименту. Якщо логіка спільна,
+то будь-яка розбіжність у результатах означає помилку саме **в графі** —
+не те ребро, пропущений вузол, не те поле стану. Порівняння стає регресійним
+тестом порту, а не порівнянням двох різних програм.
+
+## 45. State
+
+```python
+class AgentState(TypedDict, total=False):
+    user_question: str
+    selected_route: str
+    route_reason: str
+    slots: dict[str, Any]
+    tool_result: dict[str, Any]
+    entitlement: dict[str, Any]
+    observations: list[dict[str, Any]]
+    nodes_executed: list[str]
+    needs_user_input: str | None
+    final_answer: str
+```
+
+Кожен вузол повертає **часткове** оновлення, LangGraph зливає його зі станом.
+Поле `nodes_executed` кожен вузол дописує сам — це і є трасування графа,
+причому воно живе всередині стану, а не в зовнішньому логері.
+
+## 46. Nodes і Edges
+
+**10 вузлів:**
+
+| Вузол | Роль |
+|---|---|
+| `classify_request` | маршрутизація за ключовими словами |
+| `extract_slots` | витяг `employee_id`, дат, кількості днів, індикатора |
+| `check_required_slots` | чи вистачає даних для обраного маршруту |
+| `lookup_amount` | інструмент державних сум |
+| `search_knowledge_base` | пошук по базі знань |
+| `calculate_entitlement` | розрахунок днів відпустки |
+| `preview_request` | прев'ю заявки, без запису |
+| `build_answer` | єдиний вихід: збирає відповідь для всіх успішних маршрутів |
+| `ask_user` | термінальний вузол, коли слотів бракує |
+| `ask_clarification` | термінальний вузол fallback |
+
+**4 conditional edges** (мінімум за завданням — один):
+
+1. `classify_request` → п'ять гілок за `selected_route`
+2. `extract_slots` → до потрібного інструмента або на перевірку слотів
+3. `check_required_slots` → `continue` або `ask_user` ← **найцікавіше ребро**
+4. `calculate_entitlement` → `preview_request` лише для заявки
+
+Третє ребро варте окремої уваги: воно кодує **третій результат**, якого немає
+у схемі «успіх або помилка». Маршрут обрано правильно, помилки немає, але
+виконати його неможливо — тож workflow зупиняється і питає.
+
+## 47. Граф
+
+Діаграма нижче згенерована **самим фреймворком**
+(`APP.get_graph().draw_mermaid()`), а не намальована вручну — тому вона
+фізично не може розійтися з кодом. Це перша відчутна перевага, якої в
+custom-версії не було: там схема в README писалась руками й старіла б
+із першою ж правкою.
+
+```mermaid
+graph TD;
+	__start__([__start__]):::first
+	classify_request(classify_request)
+	extract_slots(extract_slots)
+	check_required_slots(check_required_slots)
+	lookup_amount(lookup_amount)
+	search_knowledge_base(search_knowledge_base)
+	calculate_entitlement(calculate_entitlement)
+	preview_request(preview_request)
+	build_answer(build_answer)
+	ask_user(ask_user)
+	ask_clarification(ask_clarification)
+	__end__([__end__]):::last
+	__start__ --> classify_request;
+	classify_request -. clarification .-> ask_clarification;
+	classify_request -. statutory_amount .-> extract_slots;
+	classify_request -. legal_norm .-> extract_slots;
+	classify_request -. personal_calculation .-> extract_slots;
+	classify_request -. leave_request .-> extract_slots;
+	extract_slots -. statutory_amount .-> lookup_amount;
+	extract_slots -. legal_norm .-> search_knowledge_base;
+	extract_slots -. personal_calculation .-> check_required_slots;
+	extract_slots -. leave_request .-> check_required_slots;
+	check_required_slots -. continue .-> calculate_entitlement;
+	check_required_slots -.-> ask_user;
+	calculate_entitlement -. preview .-> preview_request;
+	calculate_entitlement -. answer .-> build_answer;
+	lookup_amount --> build_answer;
+	search_knowledge_base --> build_answer;
+	preview_request --> build_answer;
+	build_answer --> __end__;
+	ask_user --> __end__;
+	ask_clarification --> __end__;
+```
+
+## 48. Тестування і перевірка паритету
+
+П'ять питань, повні трасування — [`outputs/langgraph_examples.md`](outputs/langgraph_examples.md).
+
+| Питання | Маршрут | Вузлів |
+|---|---|---|
+| Яка зараз мінімальна заробітна плата? | `statutory_amount` | 4 |
+| Скільки днів відпустки належить за законом? | `legal_norm` | 4 |
+| Подай заявку emp_001 з 01.10.2026 на 10 днів | `leave_request` | **6** |
+| Хочу подати заявку на відпустку | `leave_request` → `ask_user` | 4 |
+| Розкажи щось цікаве | `clarification` | 2 |
+
+Окремо — [`outputs/parity_check.md`](outputs/parity_check.md): обидві
+реалізації прогнані на тих самих питаннях, звірено маршрут, слоти, перелік
+інструментів, запит на уточнення й фінальну відповідь.
+
+**Результат: 5 із 5 ідентичних.** Порт не змінив поведінку — це перевірено,
+а не заявлено.
+
+## 49. Порівняння: custom flow проти LangGraph
+
+Спершу чесна вимірка. Порівнювати файли цілком не можна — `langgraph_flow.py`
+коротший (308 непорожніх рядків проти 442), але лише тому, що імпортує
+спільну логіку. Тому порахував **лише оркестрацію**:
+
+| | Custom | LangGraph |
+|---|---|---|
+| Рядків оркестрації | **155** | **216** |
+| Одиниць коду | 6 | 17 |
+| Найбільша одиниця | `run_flow` — **87 рядків** | `build_graph` — 51 рядок |
+
+Тобто фреймворк дає **на 40% більше коду**, але розбитого на **17 дрібних
+шматків замість 6**, і найбільша функція скорочується вдвічі. Це і є суть
+компромісу: більше рядків в обмін на менші одиниці й явну структуру.
+
+### Що стало краще
+
+**Схема більше не бреше.** Діаграма генерується з коду. У custom-версії схема
+в README намальована руками — і застаріла б із першою ж зміною маршруту.
+
+**Розгалуження стало даними, а не потоком керування.** У custom-версії гілки
+жили всередині `run_flow` як послідовність `if`. Тепер це словник у
+`add_conditional_edges` — його видно, можна перелічити, можна перевірити на
+повноту. Помилка «забув гілку» стає видимою.
+
+**Кожен вузол тестується окремо.** `check_required_slots` — звичайна функція
+зі стану в стан. У custom-версії та сама перевірка була вбудована в середину
+87-рядкового `run_flow` і викликати її ізольовано було неможливо.
+
+**Трасування безкоштовне.** `nodes_executed` — поле стану, яке дописує кожен
+вузол. Не потрібен окремий логер.
+
+### Що стало складніше
+
+**Стан треба повертати, а не мутувати.** У custom-версії `state.record(...)`
+змінював об'єкт на місці. У LangGraph вузол повертає частковий словник, який
+фреймворк зливає. Списки, що накопичуються (`observations`), через це
+доводиться передавати явно — інакше оновлення губиться.
+
+**Потік стало важче прочитати поспіль.** `run_flow` читається згори вниз як
+розповідь. Граф доводиться складати в голові з десяти функцій і чотирьох
+словників ребер. Для п'яти маршрутів це радше мінус.
+
+**Ще одна залежність.** `langgraph` тягне свій набір пакетів. Custom-версія
+не потребувала нічого поза стандартною бібліотекою й нашими модулями.
+
+### Чи виправдав себе фреймворк на цьому розмірі
+
+**Для нинішніх п'яти маршрутів — ні, і це чесна відповідь.** 155 рядків
+custom-коду роблять те саме, читаються лінійно й не додають залежностей.
+Виграш від генерованої діаграми й ізольованих вузлів не окупає +40% коду.
+
+**Але точка перелому близько.** Фреймворк почав би виграти, щойно
+з'явиться будь-що з переліку:
+
+- цикли — «уточнити → повторити», яких `run_flow` не вміє без прапорців;
+- паралельні гілки — два джерела одночасно, те саме, чого бракувало
+  детермінованому роутеру в ДЗ №6;
+- збереження стану між ходами — вбудовані checkpointer'и LangGraph;
+- людина в циклі — пауза графа на підтвердження запису замість
+  повернення рядка `requires_confirmation`.
+
+Тобто фреймворк тут не зайвий, а **передчасний**. Ми заплатили 40% коду за
+можливості, якими цей workflow ще не користується. Правильний висновок не
+«LangGraph надлишковий», а «складність варто вводити тоді, коли задача її
+вимагає» — і тепер у нас є числа, щоб визначити цей момент, а не вгадувати.
+
+## 50. Як запустити
+
+```bash
+pip install langgraph
+```
+
+```bash
+python scripts/langgraph_flow.py "яка зараз мінімальна заробітна плата"
+```
+
+Побачити граф:
+
+```bash
+python scripts/langgraph_flow.py --diagram
+```
+
+Відтворити звіти й перевірку паритету:
+
+```bash
+python scripts/run_langgraph.py
+```
+
+Жодного виклику LLM — прогін безкоштовний і повторюваний.
